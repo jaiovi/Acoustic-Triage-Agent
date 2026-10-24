@@ -1,6 +1,6 @@
 # Acoustic Triage Agent
 
-An MVP dashboard that accepts voice-report files, simulates transcription, and routes support tickets with deterministic keyword rules.
+An MVP support dashboard that accepts voice-report files or live microphone audio and routes transcripts into tickets with deterministic keyword rules.
 
 ## Run & Operate
 
@@ -10,7 +10,7 @@ An MVP dashboard that accepts voice-report files, simulates transcription, and r
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- Required env: `DATABASE_URL` — Postgres connection string; `RESON8_API_KEY` — server-side API key for realtime speech-to-text
 - Container build: `docker build -t acoustic-triage-agent .`; the image serves the built dashboard and API on port 5000.
 
 ## Stack
@@ -27,24 +27,26 @@ An MVP dashboard that accepts voice-report files, simulates transcription, and r
 - `lib/api-spec/openapi.yaml` — API contract and generated client/Zod source
 - `lib/db/src/schema/triage-tickets.ts` — persisted ticket schema
 - `artifacts/api-server/src/routes/triage.ts` — API routes, upload validation, rate limiting, summary
+- `artifacts/api-server/src/lib/realtime-proxy.ts` — browser-to-Reson8 WebSocket proxy; keeps the API key on the server
+- `artifacts/api-server/src/lib/triage-service.ts` — shared classification and ticket persistence
 - `artifacts/api-server/src/lib/triage-engine.ts` — pure keyword classifier and recommendations
 - `artifacts/api-server/src/lib/mock-reson8.ts` — simulated 500 ms transcription adapter
 - `artifacts/acoustic-triage-agent/src/` — dashboard and ticket detail UI
 
 ## Architecture decisions
 
-- The transcription provider is intentionally simulated because no Reason8/Reson8 application API integration or endpoint details were available.
-- Uploaded bytes are held in memory only long enough to validate the request; they are not decoded, persisted, or sent to a third party.
+- Uploaded WAV/MP3 files still use a transparent canned-transcript simulation. Live microphone sessions use the Reson8 realtime WebSocket API.
+- The Reson8 API key is server-side only. Live audio is streamed to Reson8; this app does not persist raw audio.
 - The React + Vite artifact uses the shared Express API service and generated OpenAPI helpers.
 - The classifier is deterministic and runs in O(n) time for fixed keyword groups; unknown language routes to human review.
 
 ## Product
 
-- Upload WAV/MP3 files, receive a simulated transcript, classify it into audio capture, desktop crash, sync infrastructure, or human review, and view the saved ticket feed and detail page.
+- Upload WAV/MP3 files for a clearly marked demo simulation, or stream microphone audio to Reson8 in real time. Both flows classify transcripts into audio capture, desktop crash, sync infrastructure, or human review and save tickets to the feed and detail page.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+_The user wants the interface to follow the attached Jamie screenshot's clean white layout, horizontal navigation, and violet accent while keeping Acoustic branding._
 
 ## Gotchas
 

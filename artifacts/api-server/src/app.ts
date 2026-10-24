@@ -41,15 +41,22 @@ app.use(
     allowedHeaders: ["Content-Type"],
   }),
 );
-app.use((_req, res, next) => {
+const apiContentSecurityPolicy =
+  "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'";
+const webContentSecurityPolicy =
+  "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' ws: wss:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
+app.use((req, res, next) => {
   res.setHeader(
     "Content-Security-Policy",
-    "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
+    req.path.startsWith("/api/")
+      ? apiContentSecurityPolicy
+      : webContentSecurityPolicy,
   );
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("Referrer-Policy", "no-referrer");
   res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
+  res.setHeader("Permissions-Policy", "microphone=(self)");
   next();
 });
 app.use(express.json());

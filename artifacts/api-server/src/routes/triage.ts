@@ -1,6 +1,5 @@
 import {
   AnalyzeAudioTicketBody,
-  AnalyzeAudioTicketResponse,
   GetTriageDashboardSummaryResponse,
   GetTriageTicketParams,
   GetTriageTicketResponse,
@@ -13,11 +12,8 @@ import { Router, type IRouter } from "express";
 import { db, triageTicketsTable } from "@workspace/db";
 import { z } from "zod";
 import { transcribeWithMockReson8 } from "../lib/mock-reson8";
-import {
-  classifyTranscript,
-  triageCategories,
-  type TriageCategory,
-} from "../lib/triage-engine";
+import { triageCategories, type TriageCategory } from "../lib/triage-engine";
+import { createClassifiedTicket } from "../lib/triage-service";
 
 const router: IRouter = Router();
 const upload = multer({
@@ -79,13 +75,6 @@ function isRateLimited(ip: string, now: number): boolean {
   return existing.count > uploadRateLimit.maxRequests;
 }
 
-function toApiTicket(ticket: typeof triageTicketsTable.$inferSelect) {
-  return {
-    ...ticket,
-    createdAt: ticket.createdAt.toISOString(),
-  };
-}
-
 router.get("/tickets", async (req, res): Promise<void> => {
   const parsedQuery = ListTriageTicketsQueryParams.safeParse(req.query);
   if (!parsedQuery.success) {
@@ -99,7 +88,14 @@ router.get("/tickets", async (req, res): Promise<void> => {
     .orderBy(desc(triageTicketsTable.createdAt))
     .limit(parsedQuery.data.limit);
 
-  res.json(ListTriageTicketsResponse.parse(rows.map(toApiTicket)));
+  res.json(
+    ListTriageTicketsResponse.parse(
+      rows.map((ticket) => ({
+        ...ticket,
+        createdAt: ticket.createdAt.toISOString(),
+      })),
+    ),
+  );
 });
 
 router.get("/tickets/:id", async (req, res): Promise<void> => {
@@ -120,7 +116,12 @@ router.get("/tickets/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  res.json(GetTriageTicketResponse.parse(toApiTicket(ticket)));
+  res.json(
+    GetTriageTicketResponse.parse({
+      ...ticket,
+      createdAt: ticket.createdAt.toISOString(),
+    }),
+  );
 });
 
 router.post(
@@ -165,33 +166,25 @@ router.post(
     const transcript = await transcribeWithMockReson8({
       name: parsedMetadata.data.fileName,
     });
-    const triage = classifyTranscript(transcript);
-    const tag =
-      triage.category === "UNKNOWN_NEEDS_HUMAN"
-        ? "Needs human review"
-        : "Sugerencia de Resolución Automática";
-    const [ticket] = await db
-      .insert(triageTicketsTable)
-      .values({
-        fileName,
-        transcript,
-        category: triage.category,
-        priority: triage.priority,
-        status: "CATEGORIZED",
-        tag,
-        recommendation: triage.recommendation,
-      })
-      .returning();
-
-    if (!ticket) {
+    let response;
+    try {
+      response = await createClassifiedTicket({ fileName, transcript });
+    } catch (error) {
+      req.log.error({ err: error }, "The ticket could not be saved");
       res.status(500).json({ error: "The ticket could not be saved." });
       return;
     }
 
-    const response = AnalyzeAudioTicketResponse.parse(toApiTicket(ticket));
     req.log.info(
-      { event: "support_ticket_classified", ticket: response },
-      "Simulated voice ticket classified and proactively routed",
+      {
+        event: "support_ticket_classified",
+        ticket: {
+          id: response.id,
+          category: response.category,
+          priority: response.priority,
+        },
+      },
+      "Voice ticket classified and proactively routed",
     );
     res.status(201).json(response);
   },
