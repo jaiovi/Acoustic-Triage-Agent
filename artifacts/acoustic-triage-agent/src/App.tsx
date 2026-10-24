@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState, type ChangeEvent, type DragEvent } from 'react';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, ArrowRight, AudioLines, Check, ChevronRight, CircleHelp, Clock3, FileAudio2, Headphones, Mic, RefreshCw, ShieldCheck, Square, UploadCloud, X } from 'lucide-react';
-import { Link, Route, Switch, useParams } from 'wouter';
+import { ArrowLeft, ArrowRight, AudioLines, BookOpen, Check, ChevronRight, CircleHelp, Clock3, FileAudio2, Headphones, Mic, RefreshCw, ShieldCheck, Square, UploadCloud, X } from 'lucide-react';
+import { Link, Route, Switch, useLocation, useParams } from 'wouter';
 import {
   getGetTriageDashboardSummaryQueryKey,
   getGetTriageTicketQueryKey,
   getListTriageTicketsQueryKey,
   useAnalyzeAudioTicket,
   useGetTriageDashboardSummary,
+  getGetTriageRulebookQueryKey,
+  useGetTriageRulebook,
   useGetTriageTicket,
   useListTriageTickets,
 } from '@workspace/api-client-react';
@@ -43,11 +45,12 @@ function Header() {
       <nav className="horizontal-nav" aria-label="Main navigation">
         <Link href="/" className="nav-link" data-testid="link-nav-overview">Overview</Link>
         <Link href="/#ticket-feed" className="nav-link" data-testid="link-nav-tickets">Ticket feed</Link>
+        <Link href="/rulebook" className="nav-link" data-testid="link-nav-rulebook">Rulebook</Link>
       </nav>
       <div className="top-right">
         <span className="live"><i className="live-dot" /> SUPPORT INTAKE</span>
         <span className="date mono" data-testid="text-current-date">{new Intl.DateTimeFormat(undefined, { weekday: 'short', month: 'short', day: 'numeric' }).format(new Date())}</span>
-        <Link href="/#ticket-feed" className="nav-cta" data-testid="link-nav-start">Start intake <ArrowRight size={13} /></Link>
+        <Link href="/#intake-panel" className="nav-cta" data-testid="link-nav-start">Start intake <ArrowRight size={13} /></Link>
       </div>
     </header>
   </>;
@@ -124,7 +127,7 @@ function UploadBox() {
     }
   }
 
-  return <section className="panel" id="ticket-feed">
+  return <section className="panel" id="intake-panel" data-testid="panel-intake">
     <div className="panel-head">
       <div><h2>Turn a voice report into a ticket</h2><p>Choose a recording or transcribe a live customer report.</p></div>
       <span className="count-pill mono">01 / INTAKE</span>
@@ -382,7 +385,7 @@ function TicketFeed() {
   const { data, isLoading, isError, refetch } = useListTriageTickets({ limit: 30 }, {
     query: { queryKey: getListTriageTicketsQueryKey({ limit: 30 }), refetchInterval: 10000 },
   });
-  return <section className="panel">
+  return <section className="panel" id="ticket-feed" data-testid="panel-ticket-feed">
     <div className="panel-head">
       <div><h2>Latest tickets</h2><p>Freshly categorized customer reports</p></div>
       <span className="count-pill mono">{data ? String(data.length).padStart(2, '0') : '—'} / 30</span>
@@ -413,6 +416,13 @@ function TicketRow({ ticket }: { ticket: TriageTicket }) {
 }
 
 function Dashboard() {
+  const [location] = useLocation();
+  useEffect(() => {
+    if (!window.location.hash) return;
+    const targetId = decodeURIComponent(window.location.hash.slice(1));
+    const frame = window.requestAnimationFrame(() => document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    return () => window.cancelAnimationFrame(frame);
+  }, [location]);
   return <div className="shell"><Header /><main className="content workspace-content fade-in">
     <div className="page-heading">
       <div><div className="eyebrow">SUPPORT OPERATIONS / OVERVIEW</div><h1>Hear the signal.</h1><p>Customer voice, translated into the next right action.</p></div>
@@ -433,6 +443,61 @@ function Dashboard() {
         </section>
       </div>
     </div>
+    <div className="footer-note">ACOUSTIC TRIAGE AGENT &nbsp;·&nbsp; SUPPORT SIGNAL, WITHOUT THE STATIC</div>
+  </main></div>;
+}
+
+function Rulebook() {
+  const { data, isLoading, isError, refetch } = useGetTriageRulebook({
+    query: { queryKey: getGetTriageRulebookQueryKey() },
+  });
+
+  return <div className="shell"><Header /><main className="content workspace-content rulebook-content fade-in">
+    <div className="rulebook-heading">
+      <div>
+        <div className="eyebrow">SUPPORT OPERATIONS / ROUTING REFERENCE</div>
+        <h1>Rulebook<span>.</span></h1>
+        <p>The ordered signals Acoustic uses to turn customer language into a useful handoff.</p>
+      </div>
+      <div className="rulebook-intro-note"><BookOpen size={18} /><span>Rules are evaluated in order. The first matching signal sets the route and recommended next step.</span></div>
+    </div>
+    <div className="rulebook-toolbar">
+      <div><span className="rulebook-kicker">CLASSIFICATION LOGIC</span><h2>Routing rules</h2></div>
+      <span className="count-pill mono" data-testid="rulebook-count">{data ? `${String(data.length).padStart(2, '0')} RULES` : '— RULES'}</span>
+    </div>
+    {isLoading ? <div className="rulebook-list" aria-label="Loading rulebook" data-testid="status-rulebook-loading">
+      {[0, 1, 2].map((item) => <div className="rule-skeleton" key={item}><span /><div><i /><i /><i /></div></div>)}
+    </div> : isError ? <section className="panel rulebook-state error-state" data-testid="status-rulebook-error">
+      <CircleHelp size={28} /><strong>Rulebook unavailable</strong><p>We couldn’t retrieve the routing reference just now.</p>
+      <button className="subtle-button" onClick={() => refetch()} data-testid="button-retry-rulebook"><RefreshCw size={12} style={{ verticalAlign: 'middle', marginRight: 5 }} />Try again</button>
+    </section> : !data?.length ? <section className="panel rulebook-state empty-state" data-testid="status-rulebook-empty">
+      <BookOpen size={28} /><strong>No routing rules yet</strong><p>The rulebook is empty. Check back when rules are available.</p>
+    </section> : <div className="rulebook-list" data-testid="list-rulebook-rules">
+      {data.map((rule, index) => <article className="rule-card" key={`${rule.category}-${rule.title}-${index}`} data-testid={`card-rule-${index}`}>
+        <div className="rule-index"><span>ORDER</span><strong>{String(index + 1).padStart(2, '0')}</strong><i /></div>
+        <div className="rule-body">
+          <div className="rule-title-row">
+            <div><span className="rule-category mono" data-testid={`text-rule-category-${index}`}>{rule.category.replaceAll('_', ' ')}</span><h3 data-testid={`text-rule-title-${index}`}>{rule.title}</h3></div>
+            <span className={`rule-priority${rule.priority === 'HIGH' ? ' high' : ''}`} data-testid={`text-rule-priority-${index}`}>{rule.priority} PRIORITY</span>
+          </div>
+          <p className="rule-description" data-testid={`text-rule-description-${index}`}>{rule.description}</p>
+          <div className="rule-details-grid">
+            <section className="rule-detail-block">
+              <h4><span className="detail-mark">01</span> MATCH TERMS</h4>
+              <div className="term-list" data-testid={`list-rule-terms-${index}`}>{rule.matchTerms.map((term, termIndex) => <span className="term-chip" key={`${term}-${termIndex}`}>{term}</span>)}</div>
+            </section>
+            <section className="rule-detail-block">
+              <h4><span className="detail-mark">02</span> EXAMPLE LANGUAGE</h4>
+              <ul className="example-list" data-testid={`list-rule-examples-${index}`}>{rule.examples.map((example, exampleIndex) => <li key={`${example}-${exampleIndex}`}>“{example}”</li>)}</ul>
+            </section>
+          </div>
+          <div className="rule-recommendation" data-testid={`text-rule-recommendation-${index}`}>
+            <span className="recommendation-label"><ArrowRight size={13} /> NEXT STEP</span>
+            <p>{rule.recommendation}</p>
+          </div>
+        </div>
+      </article>)}
+    </div>}
     <div className="footer-note">ACOUSTIC TRIAGE AGENT &nbsp;·&nbsp; SUPPORT SIGNAL, WITHOUT THE STATIC</div>
   </main></div>;
 }
@@ -480,6 +545,7 @@ function TicketDetail() {
 function AppRouter() {
   return <ErrorBoundary><Switch>
     <Route path="/" component={Dashboard} />
+    <Route path="/rulebook" component={Rulebook} />
     <Route path="/tickets/:id" component={TicketDetail} />
     <Route component={NotFound} />
   </Switch></ErrorBoundary>;

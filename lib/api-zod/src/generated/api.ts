@@ -99,3 +99,18 @@ export const GetTriageDashboardSummaryResponse = zod.object({
 })
 
 
+/**
+ * @summary Get the ordered transcript triage rules
+ */
+export const GetTriageRulebookResponseItem = zod.object({
+  "category": zod.enum(['HARDWARE_AUDIO_CAPTURE', 'DESKTOP_CLIENT_CRASH', 'SYNC_INFRASTRUCTURE', 'UNKNOWN_NEEDS_HUMAN']),
+  "title": zod.string(),
+  "priority": zod.enum(['HIGH', 'NORMAL']),
+  "description": zod.string(),
+  "matchTerms": zod.array(zod.string()),
+  "examples": zod.array(zod.string()),
+  "recommendation": zod.string()
+})
+export const GetTriageRulebookResponse = zod.array(GetTriageRulebookResponseItem)
+
+

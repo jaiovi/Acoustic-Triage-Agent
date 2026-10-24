@@ -116,6 +116,20 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TriageDashboardSummary"
+  /rulebook:
+    get:
+      operationId: getTriageRulebook
+      tags: [triage]
+      summary: Get the ordered transcript triage rules
+      responses:
+        "200":
+          description: The rules used to route transcripts into support tickets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TriageRulebookRule"
 components:
   schemas:
     HealthStatus:
@@ -137,6 +151,35 @@ components:
       enum:
         - HIGH
         - NORMAL
+    TriageRulebookRule:
+      type: object
+      required:
+        - category
+        - title
+        - priority
+        - description
+        - matchTerms
+        - examples
+        - recommendation
+      properties:
+        category:
+          $ref: "#/components/schemas/TriageCategory"
+        title:
+          type: string
+        priority:
+          $ref: "#/components/schemas/TriagePriority"
+        description:
+          type: string
+        matchTerms:
+          type: array
+          items:
+            type: string
+        examples:
+          type: array
+          items:
+            type: string
+        recommendation:
+          type: string
     TriageTicket:
       type: object
       required:

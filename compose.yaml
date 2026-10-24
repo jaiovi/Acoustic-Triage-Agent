@@ -1,0 +1,45 @@
+services:
+  database:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: acoustic_triage
+      POSTGRES_USER: acoustic
+      POSTGRES_PASSWORD: acoustic-local-dev
+    volumes:
+      - acoustic-triage-data:/var/lib/postgresql/data
+
+  migrate:
+    build:
+      context: .
+      target: deps
+    command:
+      [
+        "sh",
+        "-c",
+        "node scripts/wait-for-postgres.mjs && pnpm --filter @workspace/db run push",
+      ]
+    environment:
+      DATABASE_URL: postgresql://acoustic:acoustic-local-dev@database:5432/acoustic_triage
+    depends_on:
+      database:
+        condition: service_started
+    restart: "no"
+
+  app:
+    build:
+      context: .
+    environment:
+      NODE_ENV: production
+      PORT: "5000"
+      DATABASE_URL: postgresql://acoustic:acoustic-local-dev@database:5432/acoustic_triage
+      RESON8_API_KEY: ${RESON8_API_KEY:-}
+      WEB_DIST_DIR: /workspace/artifacts/acoustic-triage-agent/dist/public
+    ports:
+      - "127.0.0.1:5000:5000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  acoustic-triage-data:

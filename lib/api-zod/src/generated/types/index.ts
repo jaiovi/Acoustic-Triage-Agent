@@ -14,6 +14,7 @@ export * from './triageCategory';
 export * from './triageDashboardSummary';
 export * from './triageDashboardSummaryCategoryCounts';
 export * from './triagePriority';
+export * from './triageRulebookRule';
 export * from './triageTicket';
 export * from './triageTicketStatus';
 export * from './triageTicketTag';

@@ -27,6 +27,16 @@ export const TriagePriority = {
   NORMAL: 'NORMAL',
 } as const;
 
+export interface TriageRulebookRule {
+  category: TriageCategory;
+  title: string;
+  priority: TriagePriority;
+  description: string;
+  matchTerms: string[];
+  examples: string[];
+  recommendation: string;
+}
+
 export type TriageTicketStatus = typeof TriageTicketStatus[keyof typeof TriageTicketStatus];
 
 

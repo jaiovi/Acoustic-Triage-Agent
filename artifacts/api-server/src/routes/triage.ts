@@ -1,6 +1,7 @@
 import {
   AnalyzeAudioTicketBody,
   GetTriageDashboardSummaryResponse,
+  GetTriageRulebookResponse,
   GetTriageTicketParams,
   GetTriageTicketResponse,
   ListTriageTicketsQueryParams,
@@ -12,7 +13,11 @@ import { Router, type IRouter } from "express";
 import { db, triageTicketsTable } from "@workspace/db";
 import { z } from "zod";
 import { transcribeWithMockReson8 } from "../lib/mock-reson8";
-import { triageCategories, type TriageCategory } from "../lib/triage-engine";
+import {
+  triageCategories,
+  triageRulebook,
+  type TriageCategory,
+} from "../lib/triage-engine";
 import { createClassifiedTicket } from "../lib/triage-service";
 
 const router: IRouter = Router();
@@ -48,6 +53,10 @@ const audioMetadataSchema = z.object({
   fileName: z.string().min(1).max(255),
   mimeType: z.enum(["audio/wav", "audio/x-wav", "audio/mpeg", "audio/mp3", "audio/x-mpeg"]),
   size: z.number().int().min(1).max(8 * 1024 * 1024),
+});
+
+router.get("/rulebook", (_req, res): void => {
+  res.json(GetTriageRulebookResponse.parse(triageRulebook));
 });
 
 function isRateLimited(ip: string, now: number): boolean {

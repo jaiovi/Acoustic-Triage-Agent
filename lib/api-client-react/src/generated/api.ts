@@ -25,6 +25,7 @@ import type {
   HealthStatus,
   ListTriageTicketsParams,
   TriageDashboardSummary,
+  TriageRulebookRule,
   TriageTicket
 } from './api.schemas';
 
@@ -435,6 +436,83 @@ export function useGetTriageDashboardSummary<TData = Awaited<ReturnType<typeof g
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetTriageDashboardSummaryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetTriageRulebookUrl = () => {
+
+
+
+
+  return `/api/rulebook`
+}
+
+/**
+ * @summary Get the ordered transcript triage rules
+ */
+export const getTriageRulebook = async ( options?: Parameters<typeof customFetch>[1]): Promise<TriageRulebookRule[]> => {
+
+  return customFetch<TriageRulebookRule[]>(getGetTriageRulebookUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTriageRulebookQueryKey = () => {
+    return [
+    `/api/rulebook`
+    ] as const;
+    }
+
+
+export const getGetTriageRulebookQueryOptions = <TData = Awaited<ReturnType<typeof getTriageRulebook>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTriageRulebook>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTriageRulebookQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTriageRulebook>>> = ({ signal }) => getTriageRulebook({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTriageRulebook>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTriageRulebookQueryResult = NonNullable<Awaited<ReturnType<typeof getTriageRulebook>>>
+export type GetTriageRulebookQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the ordered transcript triage rules
+ */
+
+export function useGetTriageRulebook<TData = Awaited<ReturnType<typeof getTriageRulebook>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTriageRulebook>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTriageRulebookQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
