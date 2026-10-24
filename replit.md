@@ -29,9 +29,11 @@ An MVP support dashboard that accepts voice-report files or live microphone audi
 - `artifacts/api-server/src/routes/triage.ts` — API routes, upload validation, rate limiting, summary
 - `artifacts/api-server/src/lib/realtime-proxy.ts` — browser-to-Reson8 WebSocket proxy; keeps the API key on the server
 - `artifacts/api-server/src/lib/triage-service.ts` — shared classification and ticket persistence
-- `artifacts/api-server/src/lib/triage-engine.ts` — pure keyword classifier and recommendations
+- `artifacts/api-server/src/lib/triage-engine.ts` — source of truth for the ordered bilingual rules, classifier, and recommendations
+- `GET /api/rulebook` and the `/rulebook` UI page — display the same server-defined routing rules
 - `artifacts/api-server/src/lib/mock-reson8.ts` — simulated 500 ms transcription adapter
 - `artifacts/acoustic-triage-agent/src/` — dashboard and ticket detail UI
+- `README.md` and `compose.yaml` — beginner local install and Docker Compose setup
 
 ## Architecture decisions
 
@@ -39,11 +41,13 @@ An MVP support dashboard that accepts voice-report files or live microphone audi
 - Live transcription uses Reson8's default speech-to-text model and automatic language detection; do not send voice IDs, custom model IDs, or query parameters.
 - The Reson8 API key is server-side only. Live audio is streamed to Reson8; this app does not persist raw audio.
 - The React + Vite artifact uses the shared Express API service and generated OpenAPI helpers.
-- The classifier is deterministic and runs in O(n) time for fixed keyword groups; unknown language routes to human review.
+- The classifier is deterministic, searches English and Spanish terms, and evaluates desktop crash, audio capture, sync, then human-review fallback. Only transcripts matching none of the first three rules go to human review.
+- Keep the visible Rulebook and classifier in sync by changing the exported `triageRulebook` definitions, not a separate UI copy.
 
 ## Product
 
 - Upload WAV/MP3 files for a clearly marked demo simulation, or stream microphone audio to Reson8 in real time. Both flows classify transcripts into audio capture, desktop crash, sync infrastructure, or human review and save tickets to the feed and detail page.
+- The header's Ticket feed link must scroll to the latest-ticket list; Start intake scrolls to the upload/realtime panel.
 
 ## User preferences
 
@@ -53,6 +57,7 @@ _The user wants the interface to follow the attached Jamie screenshot's clean wh
 
 - To preview different simulated transcripts, use filenames containing `mic`/`audio`, `crash`/`tauri`, or `sync`/`nube`; other names select the human-review sample.
 - After editing `lib/api-spec/openapi.yaml`, rerun API codegen before using its generated client or Zod schemas.
+- The standalone Docker Compose migration waits for the PostgreSQL TCP port before applying the schema.
 
 ## Pointers
 

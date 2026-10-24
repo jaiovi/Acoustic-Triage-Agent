@@ -37,6 +37,16 @@ const cases = [
     category: "SYNC_INFRASTRUCTURE",
   },
   {
+    name: "routes English internet connection reports to sync infrastructure",
+    transcript: "I'm having an issue connecting to the internet.",
+    category: "SYNC_INFRASTRUCTURE",
+  },
+  {
+    name: "routes Spanish internet connection reports to sync infrastructure",
+    transcript: "No tengo conexión a internet.",
+    category: "SYNC_INFRASTRUCTURE",
+  },
+  {
     name: "uses the more urgent crash rule when terms overlap",
     transcript: "The app is crashing and the audio is static.",
     category: "DESKTOP_CLIENT_CRASH",

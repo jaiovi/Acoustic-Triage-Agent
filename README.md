@@ -149,6 +149,8 @@ English and Spanish match terms. Rules run in this order:
 When a transcript matches more than one rule, the first rule in that order is
 used. The browser language detector does not dictate classification; the
 rulebook searches the resulting transcript text.
+Rule changes apply to new tickets; previously saved ticket categories are not
+automatically rewritten.
 
 ## Navigation
 
