@@ -1,0 +1,14 @@
+.git
+.cache
+.local
+.conversation
+.agents
+attached_assets
+node_modules
+**/node_modules
+**/dist
+**/build
+**/*.tsbuildinfo
+.env
+.env.*
+!.env.example

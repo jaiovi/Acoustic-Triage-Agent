@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Acoustic Triage Agent"
+description = "A support operations dashboard that turns audio reports into transcripts and routes technical support tickets with transparent deterministic rules. Includes a simulated transcription provider and an adapter boundary for connecting a real voice API."
+version = "1.0.0"
+id = "artifacts/acoustic-triage-agent"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18716
+
+[services.development]
+run = "pnpm --filter @workspace/acoustic-triage-agent run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/acoustic-triage-agent", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/acoustic-triage-agent/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18716"
+BASE_PATH = "/"

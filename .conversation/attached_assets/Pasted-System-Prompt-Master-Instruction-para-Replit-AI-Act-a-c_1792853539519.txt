@@ -1,0 +1,41 @@
+System Prompt / Master Instruction para Replit AI:
+Actúa como un Senior Staff Engineer. Tu objetivo es inicializar, configurar y codificar una WebApp Full-Stack llamada "Acoustic Triage Agent". Este es un MVP de soporte proactivo que procesa audio a texto (simulando la API de Reson8) y utiliza un motor de enrutamiento determinista de cero-latencia (sin LLM) para clasificar tickets de soporte técnico en tiempo real.
+Exijo un código modular, mantenible y con una lógica impecable. No utilices dependencias obsoletas.
+1. Stack Tecnológico & Arquitectura
+Framework: Next.js 14+ (App Router) con React 18+.
+Lenguaje: TypeScript (Strict mode habilitado, any está prohibido).
+Estilos: Tailwind CSS con variables CSS nativas (diseño minimalista y utilitario).
+Validación y Serialización: Zod (para validación de esquemas de entrada/salida).
+Estado y Fetching: React Server Components (RSC) y Server Actions para mutaciones; SWR o React Query si es estrictamente necesario en el cliente.
+Infraestructura/Contenedores: Docker (Multi-stage build) preparado para despliegue en entornos efímeros (ej. Cloudflare/GCP).
+2. Requerimientos de Lógica de Negocio (El Motor de Triaje)
+Implementa un motor de clasificación basado en texto estricto (O(n) complexity) en el backend (Next.js API Routes o Server Actions).
+Mock de Reson8 API: Crea un servicio asíncrono que simule recibir un archivo de audio (FormData) y devuelva una transcripción predefinida tras un delay de 500ms.
+Motor Determinista (Triage Engine):
+Implementa una función pura que reciba un string (la transcripción).
+Utiliza expresiones regulares optimizadas o mapeo de diccionarios (Hash Maps) para categorizar el texto.
+Categorías requeridas:
+HARDWARE_AUDIO_CAPTURE (Keywords: "micrófono", "audio", "estática", "no graba").
+DESKTOP_CLIENT_CRASH (Keywords: "crash", "pantalla azul", "se cerró", "Tauri").
+SYNC_INFRASTRUCTURE (Keywords: "no sincroniza", "nube", "offline").
+Fallback: UNKNOWN_NEEDS_HUMAN si no hay coincidencias.
+Proactive Webhook Dispatcher: Una vez clasificado, el sistema debe disparar un evento (simulado mediante un console.log estructurado o un POST a un endpoint de mock) emitiendo el payload del ticket clasificado con un tag de "Sugerencia de Resolución Automática".
+3. Requerimientos de Interfaz de Usuario (UI)
+Crea un "Support Triage Dashboard".
+Layout: Sidebar minimalista y un área de contenido principal.
+Componentes Principales:
+Dropzone: Un área segura para arrastrar y soltar archivos de audio (simulado, acepta .wav, .mp3).
+Live Feed: Una tabla o lista reactiva que muestre los tickets entrantes en tiempo real con su Status (Processing -> Categorized), Tag de prioridad y la Acción Proactiva recomendada.
+Mantén el UI libre de re-renders innecesarios. Usa React.memo o RSC donde tenga sentido lógico.
+4. Postura de Seguridad & Sanitización
+Validación de Entradas: Todo endpoint (Server Action o Route Handler) debe validar el payload usando Zod antes de procesar un solo byte de lógica.
+Sanitización: Escapa cualquier salida de texto renderizada en el dashboard para prevenir XSS.
+Limitación de Tasa (Rate Limiting): Simula un middleware per-IP rate limiting básico.
+CORS & Headers: Configura next.config.js con cabeceras de seguridad estrictas (Content-Security-Policy, X-Frame-Options, X-Content-Type-Options).
+5. Contenerización y Entorno (DevOps)
+Escribe un Dockerfile optimizado usando el patrón "Multi-stage build".
+Stage 1 (Deps): Instala dependencias usando npm ci o pnpm.
+Stage 2 (Builder): Compila la aplicación Next.js (next build).
+Stage 3 (Runner): Utiliza una imagen base ligera (ej. node:18-alpine o distroless), copia solo los artefactos estáticos y el binario de Next.js, ejecuta bajo un usuario no-root (node).
+Define explícitamente las variables de entorno necesarias en un .env.example.
+Ejecuta el scaffolding y proporciona el código estructurado en módulos claros (ej. /lib, /components, /app/api).

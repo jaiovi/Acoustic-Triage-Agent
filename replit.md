@@ -1,15 +1,17 @@
-# [Project name]
+# Acoustic Triage Agent
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+An MVP dashboard that accepts voice-report files, simulates transcription, and routes support tickets with deterministic keyword rules.
 
 ## Run & Operate
 
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/acoustic-triage-agent run dev` — run the dashboard
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - Required env: `DATABASE_URL` — Postgres connection string
+- Container build: `docker build -t acoustic-triage-agent .`; the image serves the built dashboard and API on port 5000.
 
 ## Stack
 
@@ -22,15 +24,23 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `lib/api-spec/openapi.yaml` — API contract and generated client/Zod source
+- `lib/db/src/schema/triage-tickets.ts` — persisted ticket schema
+- `artifacts/api-server/src/routes/triage.ts` — API routes, upload validation, rate limiting, summary
+- `artifacts/api-server/src/lib/triage-engine.ts` — pure keyword classifier and recommendations
+- `artifacts/api-server/src/lib/mock-reson8.ts` — simulated 500 ms transcription adapter
+- `artifacts/acoustic-triage-agent/src/` — dashboard and ticket detail UI
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- The transcription provider is intentionally simulated because no Reason8/Reson8 application API integration or endpoint details were available.
+- Uploaded bytes are held in memory only long enough to validate the request; they are not decoded, persisted, or sent to a third party.
+- The React + Vite artifact uses the shared Express API service and generated OpenAPI helpers.
+- The classifier is deterministic and runs in O(n) time for fixed keyword groups; unknown language routes to human review.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Upload WAV/MP3 files, receive a simulated transcript, classify it into audio capture, desktop crash, sync infrastructure, or human review, and view the saved ticket feed and detail page.
 
 ## User preferences
 
@@ -38,7 +48,8 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- To preview different simulated transcripts, use filenames containing `mic`/`audio`, `crash`/`tauri`, or `sync`/`nube`; other names select the human-review sample.
+- After editing `lib/api-spec/openapi.yaml`, rerun API codegen before using its generated client or Zod schemas.
 
 ## Pointers
 

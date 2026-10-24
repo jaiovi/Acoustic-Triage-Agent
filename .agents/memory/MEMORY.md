@@ -1,0 +1,1 @@
+- [Container base image](container-base-image.md) — use Debian slim for workspace builds that depend on Rollup's platform-specific native binary.

@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: triage
+    description: Voice support ticket triage
 paths:
   /healthz:
     get:
@@ -24,6 +26,96 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /tickets:
+    get:
+      operationId: listTriageTickets
+      tags: [triage]
+      summary: List the latest analyzed support tickets
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 30
+      responses:
+        "200":
+          description: Latest triage tickets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TriageTicket"
+  /tickets/{id}:
+    get:
+      operationId: getTriageTicket
+      tags: [triage]
+      summary: Get a triage ticket
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: The requested ticket
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TriageTicket"
+        "404":
+          description: Ticket not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /tickets/analyze:
+    post:
+      operationId: analyzeAudioTicket
+      tags: [triage]
+      summary: Simulate transcription and classify an audio support ticket
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/AudioTicketInput"
+      responses:
+        "201":
+          description: The processed support ticket
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TriageTicket"
+        "400":
+          description: Invalid or unsupported audio upload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "413":
+          description: Audio file exceeds the upload limit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /dashboard/summary:
+    get:
+      operationId: getTriageDashboardSummary
+      tags: [triage]
+      summary: Get dashboard ticket totals and category counts
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TriageDashboardSummary"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +125,91 @@ components:
           type: string
       required:
         - status
+    TriageCategory:
+      type: string
+      enum:
+        - HARDWARE_AUDIO_CAPTURE
+        - DESKTOP_CLIENT_CRASH
+        - SYNC_INFRASTRUCTURE
+        - UNKNOWN_NEEDS_HUMAN
+    TriagePriority:
+      type: string
+      enum:
+        - HIGH
+        - NORMAL
+    TriageTicket:
+      type: object
+      required:
+        - id
+        - fileName
+        - transcript
+        - category
+        - priority
+        - status
+        - tag
+        - recommendation
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        fileName:
+          type: string
+        transcript:
+          type: string
+        category:
+          $ref: "#/components/schemas/TriageCategory"
+        priority:
+          $ref: "#/components/schemas/TriagePriority"
+        status:
+          type: string
+          enum: [CATEGORIZED]
+        tag:
+          type: string
+          enum: [Sugerencia de Resolución Automática, Needs human review]
+        recommendation:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    AudioTicketInput:
+      type: object
+      required: [audio]
+      properties:
+        audio:
+          type: string
+          format: binary
+          description: Audio file for simulated transcription; WAV and MP3 only
+    TriageDashboardSummary:
+      type: object
+      required: [totalTickets, autoRouted, needsHuman, categoryCounts]
+      properties:
+        totalTickets:
+          type: integer
+        autoRouted:
+          type: integer
+        needsHuman:
+          type: integer
+        categoryCounts:
+          type: object
+          required:
+            - HARDWARE_AUDIO_CAPTURE
+            - DESKTOP_CLIENT_CRASH
+            - SYNC_INFRASTRUCTURE
+            - UNKNOWN_NEEDS_HUMAN
+          properties:
+            HARDWARE_AUDIO_CAPTURE:
+              type: integer
+            DESKTOP_CLIENT_CRASH:
+              type: integer
+            SYNC_INFRASTRUCTURE:
+              type: integer
+            UNKNOWN_NEEDS_HUMAN:
+              type: integer
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
 
