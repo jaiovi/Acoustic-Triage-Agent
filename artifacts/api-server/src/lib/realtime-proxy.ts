@@ -14,13 +14,6 @@ const activeSessions = new Map<string, number>();
 const connectionWindowMs = 60_000;
 const maxConnectionsPerWindow = 10;
 const connectionCounts = new Map<string, { count: number; resetAt: number }>();
-const realtimeQuerySchema = z.object({
-  language: z
-    .string()
-    .regex(/^[a-z]{2}(,[a-z]{2})*$/)
-    .max(20)
-    .default("es"),
-});
 const flushRequestSchema = z.object({
   type: z.literal("flush_request"),
   id: z.string().max(100).optional(),
@@ -122,10 +115,7 @@ export function attachRealtimeProxy(server: Server): void {
       }
     }
 
-    const parsedQuery = realtimeQuerySchema.safeParse(
-      Object.fromEntries(requestUrl.searchParams.entries()),
-    );
-    if (!parsedQuery.success) {
+    if (requestUrl.searchParams.size > 0) {
       rejectUpgrade(socket, 400, "Bad Request");
       return;
     }
@@ -148,7 +138,6 @@ export function attachRealtimeProxy(server: Server): void {
       wss.emit("connection", client, request, {
         apiKey,
         ip,
-        language: parsedQuery.data.language,
       });
     });
   });
@@ -158,7 +147,7 @@ export function attachRealtimeProxy(server: Server): void {
     (
       client: WebSocket,
       _request: IncomingMessage,
-      context: { apiKey: string; ip: string; language: string },
+      context: { apiKey: string; ip: string },
     ) => {
       activeSessions.set(context.ip, (activeSessions.get(context.ip) ?? 0) + 1);
       let sessionBytes = 0;
@@ -173,20 +162,14 @@ export function attachRealtimeProxy(server: Server): void {
         else activeSessions.set(context.ip, remaining);
       };
 
-      const upstreamUrl = new URL(
+      const upstream = new WebSocket(
         "wss://api.reson8.dev/v1/speech-to-text/realtime",
-      );
-      upstreamUrl.searchParams.set("encoding", "auto");
-      upstreamUrl.searchParams.set("language", context.language);
-      upstreamUrl.searchParams.set("include_interim", "true");
-      upstreamUrl.searchParams.set("include_language", "true");
-      upstreamUrl.searchParams.set("include_timestamps", "true");
-
-      const upstream = new WebSocket(upstreamUrl, {
+        {
         headers: { Authorization: `ApiKey ${context.apiKey}` },
         maxPayload: 256 * 1024,
         perMessageDeflate: false,
-      });
+        },
+      );
 
       const sessionTimer = setTimeout(
         () => client.close(1008, "session_timeout"),

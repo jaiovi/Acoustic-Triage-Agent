@@ -36,6 +36,7 @@ An MVP support dashboard that accepts voice-report files or live microphone audi
 ## Architecture decisions
 
 - Uploaded WAV/MP3 files still use a transparent canned-transcript simulation. Live microphone sessions use the Reson8 realtime WebSocket API.
+- Live transcription uses Reson8's default speech-to-text model and automatic language detection; do not send voice IDs, custom model IDs, or query parameters.
 - The Reson8 API key is server-side only. Live audio is streamed to Reson8; this app does not persist raw audio.
 - The React + Vite artifact uses the shared Express API service and generated OpenAPI helpers.
 - The classifier is deterministic and runs in O(n) time for fixed keyword groups; unknown language routes to human review.

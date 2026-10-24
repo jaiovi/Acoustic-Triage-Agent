@@ -268,7 +268,7 @@ function RealtimeIntake({ onTicket }: RealtimeIntakeProps) {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     let socket: WebSocket;
     try {
-      socket = new WebSocket(`${protocol}//${window.location.host}/api/realtime?language=es`);
+      socket = new WebSocket(`${protocol}//${window.location.host}/api/realtime`);
     } catch {
       fail('Could not open the live transcription connection. Check your connection and retry.');
       return;
@@ -345,7 +345,7 @@ function RealtimeIntake({ onTicket }: RealtimeIntakeProps) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}><Check size={15} /> Ticket saved · <strong>{categoryNames[savedTicket.category]}</strong></div>
       <Link href={`/tickets/${encodeURIComponent(savedTicket.id)}`} className="back-link" style={{ margin: '8px 0 0', color: '#286b64' }} data-testid={`link-realtime-ticket-${savedTicket.id}`}>Open ticket <ArrowRight size={13} /></Link>
     </div>}
-    <div className="file-note">REAL-TIME TRANSCRIPTION · RESON8 · SPANISH<br />Microphone audio streams securely through the server proxy. Sessions are limited to 10 minutes.</div>
+    <div className="file-note">REAL-TIME TRANSCRIPTION · RESON8 · AUTOMATIC LANGUAGE DETECTION<br />Microphone audio streams securely through the server proxy. Sessions are limited to 10 minutes.</div>
   </div>;
 }
 
